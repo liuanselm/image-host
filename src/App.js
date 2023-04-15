@@ -2,9 +2,9 @@ import './App.css';
 import { supabase } from './supabaseClient'
 import { useState, useEffect } from 'react'
 
-import Upload from './Pages/Upload/Upload'
 import Auth from './Pages/Auth/Auth'
 import Account from './Pages/Account/Account'
+import Home from './Pages/Home/Home'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -19,7 +19,7 @@ function App() {
   }, [])
   return (
     <div className="container" style={{ padding: '50px 0 100px 0' }}>
-      {!session ? <Auth /> : <Account key={session.user.id} session={session} />}
+      {!session ? <Auth /> : <Home key={session.user.id} session={session} />}
     </div>
   );
 }
