@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 
+import Chonky from '../Chonky/Chonky'
+
 export default function Account({ session }) {
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState(null)
@@ -59,37 +61,35 @@ export default function Account({ session }) {
   //non authenticating functions
 
   const upload = async (e) => {
-    const data = JSON.parse(e)
-    let { error } = await supabase.from('images').insert({image_url: data.url, user_id: session.user.id})
+    const data = e.path
+    let { error } = await supabase.from('images').insert({image_url: data, user_id: session.user.id})
   }
 
-  //sends base64 image to server
-  function postData(e, imgName){
-    var xhr = new XMLHttpRequest()
-    xhr.addEventListener('load', ()=>{
-      upload(xhr.responseText)
-      console.log(xhr.responseText)
-    })
-    xhr.open('POST', 'http://localhost:5000')
-    const data = {image: e, user: session.user.id, name: imgName}
-    xhr.send(JSON.stringify(data))
-  }
 
-  //converts image into base64 so it can be sent to server
-  const convertToBase64 = () => {
-    for (let i=0; i<image.length; i++){
-      const reader = new FileReader()
-      reader.readAsDataURL(image[i])
-      reader.onloadend = () => {
-        postData(reader.result, image[i].name)
+
+  const uploadStorage = async () => {
+    for (let i = 0; i < image.length; i++){
+      const file = image[i]
+      var url = session.user.id + '/' + file.name
+      const { data, error } = await supabase.storage.from('images').upload(url, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+      if (data){
+        upload(data)
+      }
+      if (error){
+        console.log(error)
       }
     }
   }
+  
 
   return (
     <div>
+      <Chonky />
       <input type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
-      <button onClick={()=>convertToBase64()}>Post</button>
+      <button onClick={()=>uploadStorage()}>Post</button>
     </div>
   )
 }
