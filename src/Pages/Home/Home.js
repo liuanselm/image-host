@@ -8,6 +8,8 @@ export default function Account({ session }) {
   const [avatar_url, setAvatarUrl] = useState(null)
 
   const [image, setImage] = React.useState([])
+  const [folder, setFolder] = React.useState([])
+  const [content, setContent] = React.useState(null)
 
   useEffect(() => {
     async function getProfile() {
@@ -16,7 +18,7 @@ export default function Account({ session }) {
 
       let { data, error } = await supabase
         .from('profiles')
-        .select(`username, website, avatar_url`)
+        .select(`username, website, avatar_url, root`)
         .eq('id', user.id)
         .single()
 
@@ -26,6 +28,7 @@ export default function Account({ session }) {
         setUsername(data.username)
         setWebsite(data.website)
         setAvatarUrl(data.avatar_url)
+        setFolder(data.root)
       }
 
       setLoading(false)
@@ -58,34 +61,57 @@ export default function Account({ session }) {
 
   //non authenticating functions
 
-  //upload function for database table, not needed as currently using postgres triggers.
-  const upload = async (e) => {
-    const url = e.path
-    const { data, error } = await supabase.from('images').insert({image_url: url, user_id: session.user.id}).select()
-    if (data){
-      console.log(data)
+  useEffect(()=>{
+    getContent()
+  },[folder])
+
+  const getContent = async() =>{
+    if (folder[0] != null){
+      const { data, error } = await supabase.from('pages').select('content').eq('uuid', folder)
+      if (data){
+        setContent(data)
+      }
+      else{
+        console.log(error)
+      }
     }
   }
-
-
 
   const uploadStorage = async () => {
     for (let i = 0; i < image.length; i++){
       const file = image[i]
-      var url = 'public/' + session.user.id + '/' + file.name
+      var url = 'public/' + folder + '/' + file.name
       const { data, error } = await supabase.storage.from('images').upload(url, file, {
         cacheControl: '3600',
         upsert: false
       })
+      if (data){
+        getContent()
+      } 
       if (error){
         console.log(error)
       }
     }
   }
-  
+
+  const getBucket = async (path) => {
+    const {data, error} = await supabase.storage.from('images').list(path, {
+      sortBy: { column: 'name', order: 'asc' },
+    })
+    if (data){
+      console.log(data)
+    }
+  }
+
+  getBucket("public/1a594101-0cf3-497f-81ea-57daedb18f31/")
 
   return (
     <div>
+      <div>
+        {
+          content ? content[0].content.map((item)=><span style={{padding: '5px'}}>{item.path}</span>) : <span>null</span>
+        }
+      </div>
       <input type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
       <button onClick={()=>uploadStorage()}>Post</button>
     </div>
