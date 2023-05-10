@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+
 import './Home.css'
 
 export default function Account({ session }) {
@@ -12,6 +14,10 @@ export default function Account({ session }) {
   const [folder, setFolder] = React.useState(null)
   const [bucket, setBucket] = React.useState(null)
   const [content, setContent] = React.useState(null)
+
+  let [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     async function getProfile() {
@@ -31,13 +37,19 @@ export default function Account({ session }) {
         setWebsite(data.website)
         setAvatarUrl(data.avatar_url)
         setFolder(data.root)
+        navigate({pathname: '/', search: '?id='+ data.root})
       }
-
       setLoading(false)
     }
-
     getProfile()
+    
   }, [session])
+  
+  useEffect(()=>{
+    let path = searchParams.get('id')
+    getBucket(path)
+    getContent(path)
+  },[location])
 
   async function updateProfile(event) {
     event.preventDefault()
@@ -64,10 +76,15 @@ export default function Account({ session }) {
   //non authenticating functions
 
   //when folder path is updated, get the contents of that folder
+  
+  /*
   useEffect(()=>{
     getContent()
     getBucket()
+    navigate({pathname: '/', search: '?id='+ folder})
   },[folder])
+
+  */
 
   //upload functionality, uploads image to supabase storage
   const uploadStorage = async () => {
@@ -89,9 +106,9 @@ export default function Account({ session }) {
   }
 
   //gets the content of the page/folder for the folders
-  const getContent = async() =>{
+  const getContent = async(path) =>{
     if (folder != null){
-      const { data, error } = await supabase.from('pages').select('content').eq('uuid', folder)
+      const { data, error } = await supabase.from('pages').select('content').eq('uuid', path)
       if (data){
         setContent(data[0].content)
       }
@@ -102,8 +119,8 @@ export default function Account({ session }) {
   }
 
   
-  const getBucket = async () => {
-    const {data, error} = await supabase.storage.from('images').list("public/" + folder , {
+  const getBucket = async (path) => {
+    const {data, error} = await supabase.storage.from('images').list("public/" + path , {
       sortBy: { column: 'name', order: 'asc' },
     })
     if (data){
@@ -114,6 +131,7 @@ export default function Account({ session }) {
   const newFolder = async () => {
     const { data, error } = await supabase.from('pages').insert({owner: session.user.id}).select('uuid')
     if (data){
+      let currentPath = searchParams.get('id')
       newFolderUpdateContent(data[0].uuid)
     }
     if (error){
@@ -121,8 +139,8 @@ export default function Account({ session }) {
     }
   }
 
-  const newFolderUpdateContent = async (path) => {
-    const { data, error } = await supabase.from('pages').update({ content: content.concat({"type" : "folder", "path" : path})}).eq('uuid', folder)
+  const newFolderUpdateContent = async (path, currentPath) => {
+    const { data, error } = await supabase.from('pages').update({ content: content.concat({"type" : "folder", "path" : path})}).eq('uuid', currentPath)
     if (data){
       getContent()
     }
@@ -148,7 +166,7 @@ export default function Account({ session }) {
             <span key={index}>
               {
                 item.type === 'folder' ? 
-                <span onClick={()=>setFolder(item.path)} key={item.path} className='item'>
+                <span onClick={()=> navigate({pathname: '/', search: '?id='+ item.path})} key={item.path} className='item'>
                   <span style={{padding: '5px'}}>{item.path}</span>
                 </span> : <span></span>
               }

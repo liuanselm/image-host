@@ -6,6 +6,8 @@ import Auth from './Pages/Auth/Auth'
 import Account from './Pages/Account/Account'
 import Home from './Pages/Home/Home'
 
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
 function App() {
   const [session, setSession] = useState(null)
   useEffect(() => {
@@ -16,7 +18,9 @@ function App() {
     supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
+
   }, [])
+
   return (
     <div className="container" style={{ padding: '50px 0 100px 0' }}>
       {!session ? <Auth /> : <Home key={session.user.id} session={session} />}
@@ -25,3 +29,10 @@ function App() {
 }
 
 export default App;
+
+/*
+<div className="container" style={{ padding: '50px 0 100px 0' }}>
+  {!session ? <Auth /> : <Home key={session.user.id} session={session} />}
+</div>
+
+*/
