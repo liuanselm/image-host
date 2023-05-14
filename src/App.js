@@ -14,11 +14,12 @@ function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+  
+    supabase.auth.onAuthStateChange((event, _session) => {
+      if (event === 'SIGN_OUT') {
+        setSession(null)
+      }
     })
-
   }, [])
 
   return (
