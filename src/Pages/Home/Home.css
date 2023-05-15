@@ -3,6 +3,26 @@
   flex-direction: row;
   align-items: center;
   cursor: pointer;
+  justify-content: space-between;
+  padding: 15px;
+  border-bottom: 1px solid lightgrey;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.fileleft{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileicon{
+  padding-left: 15px;
+}
+
+.filename{
+  padding-left: 15px;
 }
 
 .folder{
@@ -10,8 +30,60 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  border-bottom: 1px solid lightgrey;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.folderleft{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.foldername{
+  padding-left: 15px;
+}
+
+.foldericon{
+  padding-left: 15px;
 }
 
 .history{
   padding: 15px;
+}
+
+.contentWrapper{
+  margin: 30px;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  border-radius: 15px;
+}
+
+.actionWrapper{
+  margin: 30px;
+}
+
+.labelWrapper{
+  border-bottom: 1px solid lightgrey;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+}
+
+.imageWrapper{
+  display: grid;
+  position: relative;
+  justify-items: center;
+}
+
+.image{
+  position: absolute;
+  max-width: 95%;
+  max-height: 95vh;
+  margin: auto;
 }

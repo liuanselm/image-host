@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../supabaseClient'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { GrCheckbox, GrCheckboxSelected } from 'react-icons/gr';
+import { FcFolder, FcImageFile } from 'react-icons/fc'
 
 import './Home.css'
 
@@ -15,7 +16,8 @@ export default function Account({ session }) {
   const [fileSelected, setFileSelected] = React.useState([])
   const [history, setHistory] = React.useState(null)
   const [displayPopUp, setDisplayPopUp] =  React.useState(false)
-  const [folderName, setFolderName] = React.useState('')
+  const [displayImagePopUp, setDisplayImagePopUp] = React.useState(false)
+  const [downloadedImage, setDownloadedImage] = React.useState({})
   const inputRef = React.useRef();
 
   let [searchParams, setSearchParams] = useSearchParams();
@@ -96,9 +98,9 @@ export default function Account({ session }) {
   }
 
   //gets images in the bucket
-  const getBucket = async (path) => {
+  const getBucket = async (path, order='asc') => {
     const {data, error} = await supabase.storage.from('images').list("public/" + path , {
-      sortBy: { column: 'name', order: 'asc' },
+      sortBy: { column: 'name', order: order },
     })
     if (data){
       setBucket(data)
@@ -140,6 +142,14 @@ export default function Account({ session }) {
     }
   }
 
+  const downloadFile = async (path) => {
+    const { data, error } = await supabase.storage.from('images').getPublicUrl(path)
+    if (data){
+      console.log(data)
+      setDownloadedImage(data)
+    }
+  }
+
   function deleteWrapper(){
     if (fileSelected.length != 0){
       deleteFile()
@@ -171,12 +181,13 @@ export default function Account({ session }) {
 
   const Folder = ({item}) => {
     return(
-      <span className='folder'>
-        {
-          selected.includes(item.path) ? <GrCheckboxSelected onClick={()=>handleFolderSelect(item)} /> : <GrCheckbox onClick={()=>handleFolderSelect(item)} />
-        }
-        <span onDoubleClick={()=> navigate({pathname: '/', search: '?id='+ item.path})} key={item.path} className='item'>
-          <span style={{padding: '5px'}}>{item.name}</span>
+      <span style={selected.includes(item.path) ? {backgroundColor: '#F0F8FF'} : {backgroundColor: 'white'}} onContextMenu={(e)=>e.preventDefault()} onDoubleClick={()=> navigate({pathname: '/', search: '?id='+ item.path})} className='folder'>
+        <span className='folderleft'>
+          {
+            selected.includes(item.path) ? <GrCheckboxSelected onClick={()=>handleFolderSelect(item)} /> : <GrCheckbox onClick={()=>handleFolderSelect(item)} />
+          }
+          <FcFolder className='foldericon' size={28}/>
+          <span className='foldername'>{item.name}</span>
         </span>
       </span>
     )
@@ -184,11 +195,14 @@ export default function Account({ session }) {
 
   const File = ({item}) => {
     return (
-      <span className='file'>
-        {
-          fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? <GrCheckboxSelected onClick={()=>handleFileSelect(item)} /> : <GrCheckbox onClick={()=>handleFileSelect(item)} />
-        }
-        <span style={{padding: '5px'}}>{item.name}</span>
+      <span onDoubleClick={()=>{downloadFile('public/' + searchParams.get('id')+ '/' + item.name); setDisplayImagePopUp(!displayImagePopUp)}} className='file' style={fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? {backgroundColor: '#F0F8FF'} : {backgroundColor: 'white'}}>
+        <span className='fileleft'>
+          {
+            fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? <GrCheckboxSelected onClick={()=>handleFileSelect(item)} /> : <GrCheckbox onClick={()=>handleFileSelect(item)} />
+          }
+          <FcImageFile className='fileicon' size={28}/>
+          <span className='filename'>{item.name}</span>
+        </span>
         <span style={{padding: '5px'}}>{item.metadata.size}</span>
         <span style={{padding: '5px'}}>{item.metadata.lastModified}</span>
       </span>
@@ -204,30 +218,50 @@ export default function Account({ session }) {
     )
   }
 
+  const DisplayImage = () => {
+    return(
+      <div className='imageWrapper'>
+        <img className='image' src={downloadedImage.publicUrl} />
+      </div>
+    )
+  }
+
   return (
     <div>
-      <input type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
-      <button onClick={()=>uploadStorage()}>Post</button>
-      <button onClick={()=>setDisplayPopUp(!displayPopUp)}>New Folder</button>
       {
-        displayPopUp ? <PopUp /> : <></>
+        displayImagePopUp && <DisplayImage/>
       }
-      {
-        selected.length > 0 || fileSelected.length > 0 ?  <button onClick={()=>deleteWrapper()}>Delete</button> : <></>
-      }
-      <div>
+      <div className='actionWrapper'>
+        <input type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
+        <button onClick={()=>uploadStorage()}>Post</button>
+        <button onClick={()=>setDisplayPopUp(!displayPopUp)}>New Folder</button>
         {
-          content ? content.map((item, index)=>
-            <Folder key={index} item = { item }/> 
-          ) : <span></span>
+          displayPopUp ? <PopUp /> : <></>
+        }
+        {
+          selected.length > 0 || fileSelected.length > 0 ?  <button onClick={()=>deleteWrapper()}>Delete</button> : <></>
         }
       </div>
-      <div>
-        {
-          bucket ? bucket.map((item, index)=>
-            <File key={index} item = {item}/>
-          ) : <span></span>
-        }
+      <div className='contentWrapper'>
+        <div className='labelWrapper'>
+          <div>Name</div>
+          <div>Size</div>
+          <div>Modified</div>
+        </div>
+        <div>
+          {
+            content ? content.map((item, index)=>
+              <Folder key={index} item = { item }/> 
+            ) : <span></span>
+          }
+        </div>
+        <div>
+          {
+            bucket ? bucket.map((item, index)=>
+              <File key={index} item = {item}/>
+            ) : <span></span>
+          }
+        </div>
       </div>
     </div>
   )
