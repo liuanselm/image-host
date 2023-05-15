@@ -12,6 +12,11 @@ export default function Account({ session }) {
   const [bucket, setBucket] = React.useState(null)
   const [content, setContent] = React.useState(null)
   const [selected, setSelected] = React.useState([])
+  const [fileSelected, setFileSelected] = React.useState([])
+  const [history, setHistory] = React.useState(null)
+  const [displayPopUp, setDisplayPopUp] =  React.useState(false)
+  const [folderName, setFolderName] = React.useState('')
+  const inputRef = React.useRef();
 
   let [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -102,21 +107,14 @@ export default function Account({ session }) {
 
   //creates a new folder in the pages database
   const newFolder = async () => {
+    setDisplayPopUp(!displayPopUp)
     let currentPath = searchParams.get('id')
-    const { data, error } = await supabase.from('pages').insert({owner: session.user.id, prev: currentPath}).select()
+    const { data, error } = await supabase.from('pages').insert({owner: session.user.id, prev: currentPath, name: inputRef.current.value}).select()
     if (data){
       getContent(currentPath)
     }
     if (error){
       console.log(error)
-    }
-  }
-  const deleteFolderUpdate = async (obj) => {
-    var filteredContent = content.filter(e=>e.path !== obj.uuid)
-    console.log(filteredContent)
-    const {data, error} = await supabase.from('pages').update({content: filteredContent}).eq('uuid', obj.prev)
-    if (error){
-      console.log('error ' + error)
     }
   }
 
@@ -125,21 +123,32 @@ export default function Account({ session }) {
       for (let i = 0; i < selected.length; i++){
         const { data, error } = await supabase.from('pages').delete().eq('uuid', selected[i]).select('*')
         if (data){
-          return data
         }
         if (error){
           console.log(error)
         }
       }
+      getContent(searchParams.get('id'))
     }
   }
-/*
-  const deleteFolderUpdate = async (prev) => {
-    var filteredContent = content.filter(e=>e.path !== prev)
-    console.log(prev)
-    const { data } = await supabase.from('pages').update({content: filteredContent}).eq('uuid', prev)
+
+  const deleteFile = async () => {
+    console.log(fileSelected)
+    const { data, error } = await supabase.storage.from('images').remove(fileSelected)
+    if (data){
+      getBucket(searchParams.get('id'))
+    }
   }
-*/
+
+  function deleteWrapper(){
+    if (fileSelected.length != 0){
+      deleteFile()
+    }
+    if (selected.length != 0){
+      deleteFolder()
+    }
+  }
+
   function handleFolderSelect(item){
     if (selected.includes(item.path)){
       var filteredArray = selected.filter(function(e) { return e !== item.path })
@@ -150,6 +159,16 @@ export default function Account({ session }) {
     }
   }
 
+  function handleFileSelect(item){
+    if (fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name)){
+      var filteredArray = fileSelected.filter(function(e) { return e !== 'public/' + searchParams.get('id')+ '/' + item.name })
+      setFileSelected(filteredArray)
+    }
+    else{
+      setFileSelected(oldArray=>[...oldArray, 'public/' + searchParams.get('id')+ '/' + item.name])
+    }
+  }
+
   const Folder = ({item}) => {
     return(
       <span className='folder'>
@@ -157,7 +176,7 @@ export default function Account({ session }) {
           selected.includes(item.path) ? <GrCheckboxSelected onClick={()=>handleFolderSelect(item)} /> : <GrCheckbox onClick={()=>handleFolderSelect(item)} />
         }
         <span onDoubleClick={()=> navigate({pathname: '/', search: '?id='+ item.path})} key={item.path} className='item'>
-          <span style={{padding: '5px'}}>{item.path}</span>
+          <span style={{padding: '5px'}}>{item.name}</span>
         </span>
       </span>
     )
@@ -165,8 +184,22 @@ export default function Account({ session }) {
 
   const File = ({item}) => {
     return (
-      <span className='item'>
+      <span className='file'>
+        {
+          fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? <GrCheckboxSelected onClick={()=>handleFileSelect(item)} /> : <GrCheckbox onClick={()=>handleFileSelect(item)} />
+        }
         <span style={{padding: '5px'}}>{item.name}</span>
+        <span style={{padding: '5px'}}>{item.metadata.size}</span>
+        <span style={{padding: '5px'}}>{item.metadata.lastModified}</span>
+      </span>
+    )
+  }
+
+  const PopUp = () => {
+    return (
+      <span style={{padding: '15px'}}>
+        <input ref={inputRef}></input>
+        <button onClick={()=>newFolder()}>Enter</button>
       </span>
     )
   }
@@ -175,8 +208,13 @@ export default function Account({ session }) {
     <div>
       <input type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
       <button onClick={()=>uploadStorage()}>Post</button>
-      <button onClick={()=>newFolder()}>New Folder</button>
-      <button onClick={()=>deleteFolder().then((e)=>deleteFolderUpdate(e))}>Delete</button>
+      <button onClick={()=>setDisplayPopUp(!displayPopUp)}>New Folder</button>
+      {
+        displayPopUp ? <PopUp /> : <></>
+      }
+      {
+        selected.length > 0 || fileSelected.length > 0 ?  <button onClick={()=>deleteWrapper()}>Delete</button> : <></>
+      }
       <div>
         {
           content ? content.map((item, index)=>
@@ -196,3 +234,7 @@ export default function Account({ session }) {
 }
 
 //(auth.uid() = user_id)
+
+
+
+//'[{"type" : "folder", "path" : "', new.uuid, '"name" : "',new.name,'"}]'

@@ -1,10 +1,17 @@
-.item{
-  display: flex;
-  flex-direction: column;
-}
-
-.folder{
+.file{
   display: flex;
   flex-direction: row;
   align-items: center;
+  cursor: pointer;
+}
+
+.folder{
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.history{
+  padding: 15px;
 }
