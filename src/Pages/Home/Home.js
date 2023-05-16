@@ -3,6 +3,9 @@ import { supabase } from '../../supabaseClient'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { GrCheckbox, GrCheckboxSelected } from 'react-icons/gr';
 import { FcFolder, FcImageFile } from 'react-icons/fc'
+import { AiOutlineUpload, AiOutlineFolderAdd, AiOutlineDelete, AiOutlineSearch } from 'react-icons/ai'
+import { ImRadioUnchecked, ImRadioChecked} from 'react-icons/im'
+import { CgProfile } from 'react-icons/cg'
 
 import './Home.css'
 
@@ -18,7 +21,11 @@ export default function Account({ session }) {
   const [displayPopUp, setDisplayPopUp] =  React.useState(false)
   const [displayImagePopUp, setDisplayImagePopUp] = React.useState(false)
   const [downloadedImage, setDownloadedImage] = React.useState({})
+  const [displayProfile, setDisplayProfile] = React.useState(false)
   const inputRef = React.useRef();
+  const fileRef = React.useRef();
+  const newFolderRef = React.useRef();
+  const searchRef = React.useRef();
 
   let [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -65,7 +72,13 @@ export default function Account({ session }) {
     }
   },[location])
 
-  //non authenticating functions
+  useEffect(()=>{
+    uploadStorage()
+  },[image])
+
+  const signout = async () => {
+    const { error } = await supabase.auth.signOut()
+  }
 
   //upload functionality, uploads image to supabase storage
   const uploadStorage = async () => {
@@ -150,6 +163,16 @@ export default function Account({ session }) {
     }
   }
 
+  const searchFile = async (path) => {
+    const { data, error } = await supabase.storage.from('images').list(path, {
+      sortBy: {column: 'name', order: 'asc'},
+      search: searchRef.current.value
+    })
+    if (data){
+      setBucket(data)
+    }
+  }
+
   function deleteWrapper(){
     if (fileSelected.length != 0){
       deleteFile()
@@ -184,7 +207,7 @@ export default function Account({ session }) {
       <span style={selected.includes(item.path) ? {backgroundColor: '#F0F8FF'} : {backgroundColor: 'white'}} onContextMenu={(e)=>e.preventDefault()} onDoubleClick={()=> navigate({pathname: '/', search: '?id='+ item.path})} className='folder'>
         <span className='folderleft'>
           {
-            selected.includes(item.path) ? <GrCheckboxSelected onClick={()=>handleFolderSelect(item)} /> : <GrCheckbox onClick={()=>handleFolderSelect(item)} />
+            selected.includes(item.path) ? <ImRadioChecked onClick={()=>handleFolderSelect(item)} /> : <ImRadioUnchecked onClick={()=>handleFolderSelect(item)} />
           }
           <FcFolder className='foldericon' size={28}/>
           <span className='foldername'>{item.name}</span>
@@ -198,7 +221,7 @@ export default function Account({ session }) {
       <span onDoubleClick={()=>{downloadFile('public/' + searchParams.get('id')+ '/' + item.name); setDisplayImagePopUp(!displayImagePopUp)}} className='file' style={fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? {backgroundColor: '#F0F8FF'} : {backgroundColor: 'white'}}>
         <span className='fileleft'>
           {
-            fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? <GrCheckboxSelected onClick={()=>handleFileSelect(item)} /> : <GrCheckbox onClick={()=>handleFileSelect(item)} />
+            fileSelected.includes('public/' + searchParams.get('id')+ '/' + item.name) ? <ImRadioChecked onClick={()=>handleFileSelect(item)} /> : <ImRadioUnchecked onClick={()=>handleFileSelect(item)} />
           }
           <FcImageFile className='fileicon' size={28}/>
           <span className='filename'>{item.name}</span>
@@ -220,26 +243,59 @@ export default function Account({ session }) {
 
   const DisplayImage = () => {
     return(
-      <div className='imageWrapper'>
-        <img className='image' src={downloadedImage.publicUrl} />
+      <div className='imagebackground'>
+        <div className='imageWrapper'>
+          <img className='image' src={downloadedImage.publicUrl} />
+        </div>
+      </div>
+    )
+  }
+
+  const Header = () => {
+    return(
+      <div className='header'>
+        <div style={{color: 'white'}}>File Host</div>
+        <form className='searchform'>
+          <input ref={searchRef} className='searchinput' type="search" placeholder="Search..."></input>
+          <button onClick={()=>searchFile('public/' + searchParams.get('id'))} type='button' className='searchbutton'>Search</button>
+        </form>
+        <div className='headerprofile'>
+          <CgProfile size={28} color='white' onClick={()=>setDisplayProfile(!displayProfile)}/>
+          {
+            displayProfile ? <div className='profilemenu'>
+              <div onClick={()=>signout()}>Sign Out</div>
+            </div> : null
+          }
+        </div>
       </div>
     )
   }
 
   return (
     <div>
+      <Header />
       {
         displayImagePopUp && <DisplayImage/>
       }
       <div className='actionWrapper'>
-        <input type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
-        <button onClick={()=>uploadStorage()}>Post</button>
-        <button onClick={()=>setDisplayPopUp(!displayPopUp)}>New Folder</button>
+        <div className='uploadbutton' onClick={()=>fileRef.current.click()}>
+          <AiOutlineUpload size={28}/>
+          <div>Upload</div>
+        </div>
+        <div className='uploadbutton' onClick={()=>newFolderRef.current.click()}>
+          <AiOutlineFolderAdd size={28}/>
+          <div>New Folder</div>
+        </div>
+        <input style={{display:"none"}} ref={fileRef} type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
+        <button style={{display:"none"}} ref={newFolderRef} onClick={()=>setDisplayPopUp(!displayPopUp)}>New Folder</button>
         {
           displayPopUp ? <PopUp /> : <></>
         }
         {
-          selected.length > 0 || fileSelected.length > 0 ?  <button onClick={()=>deleteWrapper()}>Delete</button> : <></>
+          (selected.length > 0 || fileSelected.length > 0) && <div className='uploadbutton' onClick={()=>deleteWrapper()}>
+            <AiOutlineDelete size={28}/>
+            <div>Delete</div>
+          </div>
         }
       </div>
       <div className='contentWrapper'>
