@@ -4,6 +4,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { GrCheckbox, GrCheckboxSelected } from 'react-icons/gr';
 import { FcFolder, FcImageFile } from 'react-icons/fc'
 import { AiOutlineUpload, AiOutlineFolderAdd, AiOutlineDelete, AiOutlineSearch, AiOutlineClose } from 'react-icons/ai'
+import { BsGrid3X2Gap } from 'react-icons/bs'
 import { ImRadioUnchecked, ImRadioChecked} from 'react-icons/im'
 import { CgProfile } from 'react-icons/cg'
 
@@ -22,10 +23,13 @@ export default function Home({ session }) {
   const [displayImagePopUp, setDisplayImagePopUp] = React.useState(false)
   const [downloadedImage, setDownloadedImage] = React.useState({})
   const [displayProfile, setDisplayProfile] = React.useState(false)
+  const [listView, setListView] = React.useState(true)
+
   const inputRef = React.useRef();
   const fileRef = React.useRef();
   const newFolderRef = React.useRef();
   const searchRef = React.useRef();
+  const newFolderEnterRef = React.useRef();
 
   let [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -78,6 +82,8 @@ export default function Home({ session }) {
 
   const signout = async () => {
     const { error } = await supabase.auth.signOut()
+    navigate({pathname: '/'})
+    window.location.reload(false);
   }
 
   //upload functionality, uploads image to supabase storage
@@ -122,14 +128,16 @@ export default function Home({ session }) {
 
   //creates a new folder in the pages database
   const newFolder = async () => {
-    setDisplayPopUp(!displayPopUp)
-    let currentPath = searchParams.get('id')
-    const { data, error } = await supabase.from('pages').insert({owner: session.user.id, prev: currentPath, name: inputRef.current.value}).select()
-    if (data){
-      getContent(currentPath)
-    }
-    if (error){
-      console.log(error)
+    if (inputRef.current.value != null || inputRef.current.value != ''){
+      setDisplayPopUp(!displayPopUp)
+      let currentPath = searchParams.get('id')
+      const { data, error } = await supabase.from('pages').insert({owner: session.user.id, prev: currentPath, name: inputRef.current.value}).select()
+      if (data){
+        getContent(currentPath)
+      }
+      if (error){
+        console.log(error)
+      }
     }
   }
 
@@ -160,6 +168,13 @@ export default function Home({ session }) {
     if (data){
       console.log(data)
       setDownloadedImage(data)
+    }
+  }
+
+  const downloadFileSync = (path) => {
+    const { data, error } = supabase.storage.from('images').getPublicUrl(path)
+    if (data){
+      return data.publicUrl
     }
   }
 
@@ -232,18 +247,33 @@ export default function Home({ session }) {
     )
   }
 
+  const FileTile = ({item}) => {
+    return(
+      <div className='tileimagewrapper'>
+        <img style={{maxHeight:'100px', maxWidth: 'auto', margin: '10px'}} src={downloadFileSync('public/' + searchParams.get('id') + '/' + item.name)}></img>
+        <div style={{textAlign: 'center'}}>{item.name}</div>
+      </div>
+    )
+  }
+
   const PopUp = () => {
     return (
-      <span style={{padding: '15px'}}>
-        <input ref={inputRef}></input>
-        <button onClick={()=>newFolder()}>Enter</button>
-      </span>
+      <div className='overlaynewfolder'>
+        <div className='newfolderpopup'>
+          <AiOutlineClose onClick={()=>setDisplayPopUp(!displayPopUp)} className='newfoldercloseoverlay'/>
+          <form className='newfolderform'>
+            <input style={{padding: '5px'}} placeholder='New folder name...' ref={inputRef}></input>
+            <div className='newfoldercreatebutton' onClick={()=>newFolderEnterRef.current.click()}>Create</div>
+            <button ref={newFolderEnterRef} style={{display: 'none'}} onClick={()=>newFolder()}>Enter</button>
+          </form>
+        </div>
+      </div>
     )
   }
 
   const DisplayImage = () => {
     return(
-      <div className='overlay'>
+      <div onClick={()=>setDisplayImagePopUp(!displayImagePopUp)} className='overlay'>
         <AiOutlineClose onClick={()=>setDisplayImagePopUp(!displayImagePopUp)} className='closeoverlay'/>
         <img className='overlayimage' src={downloadedImage.publicUrl}></img>
       </div>
@@ -281,6 +311,9 @@ export default function Home({ session }) {
           <AiOutlineFolderAdd size={28}/>
           <div>New Folder</div>
         </div>
+        <div className='uploadbutton'>
+          <BsGrid3X2Gap onClick={()=>setListView(!listView)} size={28}/>
+        </div>
         <input style={{display:"none"}} ref={fileRef} type="file" multiple="multiple" accept=".jpg,.jpeg,.png" onChange={(e)=>setImage(e.target.files)}></input>
         <button style={{display:"none"}} ref={newFolderRef} onClick={()=>setDisplayPopUp(!displayPopUp)}>New Folder</button>
         {
@@ -310,11 +343,11 @@ export default function Home({ session }) {
             ) : <span></span>
           }
         </div>
-        <div>
+        <div style={!listView ? {display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap'} : null}>
           {
-            bucket ? bucket.map((item, index)=>
+            (bucket && listView) ? bucket.map((item, index)=>
               <File key={index} item = {item}/>
-            ) : <span></span>
+            ) : (bucket && !listView) ? bucket.map((item, index)=> <FileTile key={index} item = {item}/>) : null
           }
         </div>
       </div>

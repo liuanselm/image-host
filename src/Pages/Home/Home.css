@@ -85,6 +85,7 @@
   justify-content: center;
   gap: 5px;
   cursor: pointer;
+  position: relative;
 }
 
 .uploadbutton:hover{
@@ -139,11 +140,16 @@
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
+.headerprofile{
+  position: relative;
+  cursor: pointer;
+}
+
 .profilemenu{
   position: absolute;
   list-style-type: none;
   cursor: pointer;
-  right: 15px;
+  right: 0px;
   background-color: white;
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
   padding: 15px;
@@ -152,10 +158,6 @@
 
 .profilemenu:hover{
   background-color: lightgray;
-}
-
-.headerprofile{
-  cursor: pointer;
 }
 
 .overlay{
@@ -184,4 +186,54 @@
   max-width: 95%;
   max-height: 95vh;
   margin: auto;
+}
+
+.overlaynewfolder{
+  height: 100%;
+  width: 100%;
+  position: fixed; 
+  z-index: 1; 
+  left: 0;
+  top: 0;
+  background-color: rgba(255, 255, 255, 0.50); 
+  overflow-x: hidden; 
+  transition: 0.5s;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+.newfolderpopup{
+  background-color: white;
+  padding: 50px;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  border-radius: 15px;
+  position: relative;
+}
+
+.newfoldercloseoverlay{
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.newfolderform{
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+}
+
+.newfoldercreatebutton{
+  border: 1px solid grey;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.newfoldercreatebutton:hover{
+  border: 1px solid black;
+}
+
+.tileimagewrapper{
 }

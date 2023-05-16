@@ -3,7 +3,6 @@ import { supabase } from './supabaseClient'
 import { useState, useEffect } from 'react'
 
 import Auth from './Pages/Auth/Auth'
-import Account from './Pages/Account/Account'
 import Home from './Pages/Home/Home'
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
