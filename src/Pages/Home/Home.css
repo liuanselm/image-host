@@ -77,19 +77,6 @@
   padding: 15px;
 }
 
-.imageWrapper{
-  display: grid;
-  position: relative;
-  justify-items: center;
-}
-
-.image{
-  position: absolute;
-  max-width: 95%;
-  max-height: 100vh;
-  margin: auto;
-}
-
 .uploadbutton{
   padding: 15px;
   display: flex;
@@ -171,3 +158,30 @@
   cursor: pointer;
 }
 
+.overlay{
+  height: 100%;
+  width: 100%;
+  position: fixed; 
+  z-index: 1; 
+  left: 0;
+  top: 0;
+  background-color: rgba(24, 24, 24, 0.9); 
+  overflow-x: hidden; 
+  transition: 0.5s;
+  display: grid;
+}
+
+.overlay .closeoverlay {
+  cursor: pointer;
+  position: absolute;
+  top: 20px;
+  right: 45px;
+  font-size: 60px;
+}
+
+.overlay .overlayimage{
+  position: relative;
+  max-width: 95%;
+  max-height: 95vh;
+  margin: auto;
+}

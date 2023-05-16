@@ -3,13 +3,13 @@ import { supabase } from '../../supabaseClient'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { GrCheckbox, GrCheckboxSelected } from 'react-icons/gr';
 import { FcFolder, FcImageFile } from 'react-icons/fc'
-import { AiOutlineUpload, AiOutlineFolderAdd, AiOutlineDelete, AiOutlineSearch } from 'react-icons/ai'
+import { AiOutlineUpload, AiOutlineFolderAdd, AiOutlineDelete, AiOutlineSearch, AiOutlineClose } from 'react-icons/ai'
 import { ImRadioUnchecked, ImRadioChecked} from 'react-icons/im'
 import { CgProfile } from 'react-icons/cg'
 
 import './Home.css'
 
-export default function Account({ session }) {
+export default function Home({ session }) {
   const [loading, setLoading] = useState(true)
 
   const [image, setImage] = React.useState([])
@@ -101,9 +101,9 @@ export default function Account({ session }) {
 
   //gets the content of the page/folder for the folders
   const getContent = async(path) =>{
-    const { data, error } = await supabase.from('pages').select('content').eq('uuid', path)
+    const { data, error } = await supabase.from('pages').select('*').eq('uuid', path)
     if (data){
-      setContent(data[0].content)
+      setContent(data[0])
     }
     else{
       console.log(error)
@@ -243,10 +243,9 @@ export default function Account({ session }) {
 
   const DisplayImage = () => {
     return(
-      <div className='imagebackground'>
-        <div className='imageWrapper'>
-          <img className='image' src={downloadedImage.publicUrl} />
-        </div>
+      <div className='overlay'>
+        <AiOutlineClose onClick={()=>setDisplayImagePopUp(!displayImagePopUp)} className='closeoverlay'/>
+        <img className='overlayimage' src={downloadedImage.publicUrl}></img>
       </div>
     )
   }
@@ -271,12 +270,8 @@ export default function Account({ session }) {
     )
   }
 
-  return (
-    <div>
-      <Header />
-      {
-        displayImagePopUp && <DisplayImage/>
-      }
+  const Actions = () => {
+    return(
       <div className='actionWrapper'>
         <div className='uploadbutton' onClick={()=>fileRef.current.click()}>
           <AiOutlineUpload size={28}/>
@@ -298,6 +293,10 @@ export default function Account({ session }) {
           </div>
         }
       </div>
+    )
+  }
+  const Content = () => {
+    return(
       <div className='contentWrapper'>
         <div className='labelWrapper'>
           <div>Name</div>
@@ -306,7 +305,7 @@ export default function Account({ session }) {
         </div>
         <div>
           {
-            content ? content.map((item, index)=>
+            content ? content.content.map((item, index)=>
               <Folder key={index} item = { item }/> 
             ) : <span></span>
           }
@@ -319,6 +318,17 @@ export default function Account({ session }) {
           }
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div>
+      {
+        displayImagePopUp ? <DisplayImage /> : null
+      }
+      <Header />
+      <Actions />
+      <Content />
     </div>
   )
 }
